@@ -46,7 +46,6 @@ public class BuriedPointRecordUtil {
     private TimeUnit unit;
     private String url;
     private String instance;
-    private String timeStamp;
     // tag全都相同的某一指标超过expiration时间内没有新值则从缓存中移除
     private long expiration;
     private boolean summaryOnly;
@@ -67,7 +66,6 @@ public class BuriedPointRecordUtil {
         this.unit = TimeUnit.MILLISECONDS;
         this.url = url;
         this.instance = instance;
-        this.timeStamp = String.valueOf(System.currentTimeMillis());
         this.expiration = 10000L;
         this.summaryOnly = summaryOnly;
         this.clearRate = 3600;
@@ -198,7 +196,7 @@ public class BuriedPointRecordUtil {
     private synchronized void push() {
 
         try {
-            String jobName = String.format("%s/%s", instance, timeStamp);
+            String jobName = instance;
             // 每推送clearRate次清空一次job数据，清除失效指标
             if (pushCount.getAndIncrement() % clearRate == 0) {
                 pushGateway.delete(jobName);
