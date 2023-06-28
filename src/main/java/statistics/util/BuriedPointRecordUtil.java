@@ -260,7 +260,7 @@ public class BuriedPointRecordUtil {
                             ExtGauge gauge = ExtGauge.build().name(indexName).help(indexName).create();
                             for (CountBean bean : countBeanList) {
                                 gauge.childBuilder().labelNames(bean.getTagsNameList()).labelValues(bean.getTagsValueList())
-                                    .build().set(bean.getCountAndReset());
+                                    .build().set(bean.getCount());
                             }
                             countMap.put(indexName, gauge);
                         }
