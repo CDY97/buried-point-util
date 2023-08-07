@@ -11,11 +11,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static statistics.enums.MetricType.*;
@@ -131,7 +129,19 @@ public class BuriedPointRecordUtil {
     public synchronized void startPushTask() {
 
         if (!state.get()) {
-            scheduledThreadPool = Executors.newScheduledThreadPool(1);
+            scheduledThreadPool = Executors.newScheduledThreadPool(1, new ThreadFactory() {
+
+                private final AtomicInteger count = new AtomicInteger();
+                @Override
+                public Thread newThread(Runnable r) {
+                    Thread t = new Thread(r, "buried-point-thread-" + count.getAndIncrement());
+                    if (t.isDaemon())
+                        t.setDaemon(false);
+                    if (t.getPriority() != Thread.NORM_PRIORITY)
+                        t.setPriority(Thread.NORM_PRIORITY);
+                    return t;
+                }
+            });
             scheduledThreadPool.scheduleAtFixedRate(new PushTask(), 0, period, unit);
             state.set(true);
         }
