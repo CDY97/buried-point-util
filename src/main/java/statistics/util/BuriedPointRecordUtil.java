@@ -228,56 +228,60 @@ public class BuriedPointRecordUtil {
 
         @Override
         public void run() {
-            Long curTime = System.currentTimeMillis();
-            // 处理时延指标
-            if (Objects.nonNull(delayBeanUtil)) {
-                Iterator<Map.Entry<DelayBeanUtil.BeanBuilder, DelayBean>> iterator = delayBeanUtil.getContainer().entrySet().iterator();
-                while (iterator.hasNext()) {
-                    Map.Entry<DelayBeanUtil.BeanBuilder, DelayBean> entry = iterator.next();
-                    // 如果长时间没有新值则从内存中移除
-                    if (curTime - entry.getValue().getLastUpdateTime() > expiration) {
-                        delaySummary.removeChild(entry.getValue().getSummaryChild());
-                        iterator.remove();
-                    } else {
-                        addMetric(entry.getValue());
-                    }
-                }
-            }
-            // 处理计数指标
-            if (Objects.nonNull(countBeanUtil)) {
-                Iterator<Map.Entry<String, Map<CountBeanUtil.BeanBuilder, CountBean>>> iterator = countBeanUtil.getContainer().entrySet().iterator();
-                // 处理每一种计数指标
-                while (iterator.hasNext()) {
-                    Map.Entry<String, Map<CountBeanUtil.BeanBuilder, CountBean>> mapEntry = iterator.next();
-                    String indexName = mapEntry.getKey();
-                    Map<CountBeanUtil.BeanBuilder, CountBean> beanMap = mapEntry.getValue();
-                    if (Objects.nonNull(beanMap)) {
-                        List<CountBean> countBeanList = new ArrayList<>();
-                        Iterator<Map.Entry<CountBeanUtil.BeanBuilder, CountBean>> beanIterator = beanMap.entrySet().iterator();
-                        // 处理每种计数指标下的每一条时间序列
-                        while (beanIterator.hasNext()) {
-                            Map.Entry<CountBeanUtil.BeanBuilder, CountBean> beanEntry = beanIterator.next();
-                            // 如果长时间没有新值则从内存中移除
-                            if (curTime - beanEntry.getValue().getLastUpdateTime() > expiration) {
-                                beanIterator.remove();
-                            } else {
-                                countBeanList.add(beanEntry.getValue());
-                            }
-                        }
-                        if (countBeanList.size() > 0) {
-                            ExtGauge gauge = ExtGauge.build().name(indexName).help(indexName).create();
-                            for (CountBean bean : countBeanList) {
-                                gauge.childBuilder().labelNames(bean.getTagsNameList()).labelValues(bean.getTagsValueList())
-                                    .build().set(bean.getCount());
-                            }
-                            countMap.put(indexName, gauge);
+            try {
+                Long curTime = System.currentTimeMillis();
+                // 处理时延指标
+                if (Objects.nonNull(delayBeanUtil)) {
+                    Iterator<Map.Entry<DelayBeanUtil.BeanBuilder, DelayBean>> iterator = delayBeanUtil.getContainer().entrySet().iterator();
+                    while (iterator.hasNext()) {
+                        Map.Entry<DelayBeanUtil.BeanBuilder, DelayBean> entry = iterator.next();
+                        // 如果长时间没有新值则从内存中移除
+                        if (curTime - entry.getValue().getLastUpdateTime() > expiration) {
+                            delaySummary.removeChild(entry.getValue().getSummaryChild());
+                            iterator.remove();
+                        } else {
+                            addMetric(entry.getValue());
                         }
                     }
                 }
+                // 处理计数指标
+                if (Objects.nonNull(countBeanUtil)) {
+                    Iterator<Map.Entry<String, Map<CountBeanUtil.BeanBuilder, CountBean>>> iterator = countBeanUtil.getContainer().entrySet().iterator();
+                    // 处理每一种计数指标
+                    while (iterator.hasNext()) {
+                        Map.Entry<String, Map<CountBeanUtil.BeanBuilder, CountBean>> mapEntry = iterator.next();
+                        String indexName = mapEntry.getKey();
+                        Map<CountBeanUtil.BeanBuilder, CountBean> beanMap = mapEntry.getValue();
+                        if (Objects.nonNull(beanMap)) {
+                            List<CountBean> countBeanList = new ArrayList<>();
+                            Iterator<Map.Entry<CountBeanUtil.BeanBuilder, CountBean>> beanIterator = beanMap.entrySet().iterator();
+                            // 处理每种计数指标下的每一条时间序列
+                            while (beanIterator.hasNext()) {
+                                Map.Entry<CountBeanUtil.BeanBuilder, CountBean> beanEntry = beanIterator.next();
+                                // 如果长时间没有新值则从内存中移除
+                                if (curTime - beanEntry.getValue().getLastUpdateTime() > expiration) {
+                                    beanIterator.remove();
+                                } else {
+                                    countBeanList.add(beanEntry.getValue());
+                                }
+                            }
+                            if (countBeanList.size() > 0) {
+                                ExtGauge gauge = ExtGauge.build().name(indexName).help(indexName).create();
+                                for (CountBean bean : countBeanList) {
+                                    gauge.childBuilder().labelNames(bean.getTagsNameList()).labelValues(bean.getTagsValueList())
+                                            .build().set(bean.getCount());
+                                }
+                                countMap.put(indexName, gauge);
+                            }
+                        }
+                    }
+                }
+                push();
+                // 释放内存
+                refreshMetricBean();
+            } catch (Exception e) {
+                logger.error("推送数据至pushgateway发生异常", e);
             }
-            push();
-            // 释放内存
-            refreshMetricBean();
         }
     }
 }
