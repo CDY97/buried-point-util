@@ -35,8 +35,12 @@ public class ExtSummary extends SimpleCollector<ExtSummary.Child> implements Cou
 
     public void removeChild(Child child) {
 
-        ChildBuilder childBuilder = this.childrenInvertedIndex.remove(child);
-        this.children.remove(childBuilder);
+        if (child != null) {
+            ChildBuilder childBuilder = this.childrenInvertedIndex.remove(child);
+            if (childBuilder != null) {
+                this.children.remove(childBuilder);
+            }
+        }
     }
 
     public static class Builder extends SimpleCollector.Builder<Builder, ExtSummary> {

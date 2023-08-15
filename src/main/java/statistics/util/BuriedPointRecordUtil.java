@@ -64,7 +64,7 @@ public class BuriedPointRecordUtil {
         this.unit = TimeUnit.MILLISECONDS;
         this.url = url;
         this.instance = instance;
-        this.expiration = 10000L;
+        this.expiration = 60 * 1000L;
         this.summaryOnly = summaryOnly;
         this.clearRate = 3600;
 
