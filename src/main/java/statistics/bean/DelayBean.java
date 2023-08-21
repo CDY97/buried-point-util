@@ -16,6 +16,7 @@ public class DelayBean {
 
     private ChronoUnit chronoUnit;
     private FixedList<Double> avgTable;
+    private FixedList<Double> sumTable;
     private FixedList<Double> varianceTable;
     private double max;
     private double min;
@@ -41,6 +42,8 @@ public class DelayBean {
                     this.min = Double.MAX_VALUE;
                     minFlag = false;
                     break;
+                case SUM:
+                    this.sumTable = new FixedList<>(maxSize);
                 case AVG:
                     this.avgTable = new FixedList<>(maxSize);
                     break;
@@ -74,6 +77,8 @@ public class DelayBean {
                     min = Math.min(min, duration);
                     minFlag = true;
                     break;
+                case SUM:
+                    sumTable.add(duration);
                 case AVG:
                     avgTable.add(duration);
                     break;
@@ -120,6 +125,17 @@ public class DelayBean {
 
         double res = avgTable.getList().stream().mapToDouble(i -> i).average().orElse(0);
         avgTable = new FixedList<>(avgTable.getMaxSize());
+        return res;
+    }
+
+    /**
+     * 获取总和
+     * @return
+     */
+    public double getSum() {
+
+        double res = sumTable.getList().stream().mapToDouble(i -> i).sum();
+        sumTable = new FixedList<>(sumTable.getMaxSize());
         return res;
     }
 

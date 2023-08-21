@@ -34,6 +34,7 @@ public class BuriedPointRecordUtil {
     private ExtGauge delayMax;
     private ExtGauge delayMin;
     private ExtGauge delayAvg;
+    private ExtGauge delaySum;
     private ExtGauge delayVariance;
     private ExtSummary delaySummary;
     private Map<String, ExtGauge> countMap;
@@ -64,7 +65,7 @@ public class BuriedPointRecordUtil {
         this.unit = TimeUnit.MILLISECONDS;
         this.url = url;
         this.instance = instance;
-        this.expiration = 60 * 1000L;
+        this.expiration = 10000L;
         this.summaryOnly = summaryOnly;
         this.clearRate = 3600;
 
@@ -161,6 +162,7 @@ public class BuriedPointRecordUtil {
         this.delayMax = ExtGauge.build().name(MAX.getName()).help(MAX.getDescription()).create();
         this.delayMin = ExtGauge.build().name(MIN.getName()).help(MIN.getDescription()).create();
         this.delayAvg = ExtGauge.build().name(AVG.getName()).help(AVG.getDescription()).create();
+        this.delaySum = ExtGauge.build().name(SUM.getName()).help(SUM.getDescription()).create();
         this.delayVariance = ExtGauge.build().name(VARIANCE.getName()).help(VARIANCE.getDescription()).create();
         this.delaySummary = ExtSummary.build().name(summaryName).help(SUMMARY.getDescription())
                 .quantile(0.5, 0).quantile(0.9, 0).quantile(0.99, 0)
@@ -173,6 +175,7 @@ public class BuriedPointRecordUtil {
         this.delayMax = ExtGauge.build().name(MAX.getName()).help(MAX.getDescription()).create();
         this.delayMin = ExtGauge.build().name(MIN.getName()).help(MIN.getDescription()).create();
         this.delayAvg = ExtGauge.build().name(AVG.getName()).help(AVG.getDescription()).create();
+        this.delaySum = ExtGauge.build().name(SUM.getName()).help(SUM.getDescription()).create();
         this.delayVariance = ExtGauge.build().name(VARIANCE.getName()).help(VARIANCE.getDescription()).create();
         this.countMap = new ConcurrentHashMap<>();
     }
@@ -180,8 +183,8 @@ public class BuriedPointRecordUtil {
     private synchronized void addMetric(DelayBean bean) {
 
         try {
-            for (MetricType t : bean.getTypes()) {
-                switch (t) {
+            for (MetricType type : bean.getTypes()) {
+                switch (type) {
                     case MAX:
                         delayMax.childBuilder().labelNames(bean.getTagsNameList()).labelValues(bean.getTagsValueList()).build().set(bean.getMax());
                         break;
@@ -190,6 +193,9 @@ public class BuriedPointRecordUtil {
                         break;
                     case AVG:
                         delayAvg.childBuilder().labelNames(bean.getTagsNameList()).labelValues(bean.getTagsValueList()).build().set(bean.getAvg());
+                        break;
+                    case SUM:
+                        delaySum.childBuilder().labelNames(bean.getTagsNameList()).labelValues(bean.getTagsValueList()).build().set(bean.getSum());
                         break;
                     case VARIANCE:
                         delayVariance.childBuilder().labelNames(bean.getTagsNameList()).labelValues(bean.getTagsValueList()).build().set(bean.getVariance());
@@ -214,11 +220,13 @@ public class BuriedPointRecordUtil {
             pushGateway.pushAdd(delayMax, jobName);
             pushGateway.pushAdd(delayMin, jobName);
             pushGateway.pushAdd(delayAvg, jobName);
+            pushGateway.pushAdd(delaySum, jobName);
             pushGateway.pushAdd(delayVariance, jobName);
             pushGateway.pushAdd(delaySummary, jobName);
             for (Map.Entry<String, ExtGauge> entry : countMap.entrySet()) {
                 pushGateway.pushAdd(entry.getValue(), jobName);
             }
+            logger.info("推送数据至pushgateway,url:{}", url);
         } catch (IOException e) {
             logger.error("Failed to push data to pushgateway", e);
         }
