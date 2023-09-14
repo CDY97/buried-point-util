@@ -103,6 +103,12 @@ public class BuriedPointRecordUtil {
         return ins;
     }
 
+    public BuriedPointRecordUtil expiration(long expiration) {
+
+        this.expiration = expiration;
+        return this;
+    }
+
     public DelayBeanUtil.BeanBuilder delayBeanBuilder() {
 
         if (delayBeanUtil == null) {
